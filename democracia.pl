@@ -91,6 +91,14 @@ intencionDeVotoEn(misiones, rojo, 90).
 intencionDeVotoEn(misiones, azul, 0).
 intencionDeVotoEn(misiones, amarillo, 0).
 
+promete(azul,construir([edilicio(hospital,1000),edilicio(jardines,100),edilicio(escuelas,5)])).
+promete(azul,inflacion(2,4)).
+promete(amarillo,construir([edilicio(hospital,100),edilicio(universidad,1),edilicio(comisaria,200)])).
+promete(amarillo,nuevosPuestosDeTrabajo(10000)).
+promete(amarillo,inflacion(1,15)).
+promete(rojo,nuevosPuestosDeTrabajo(80000)).
+promete(rojo,inflacion(10,30)).
+
 % Funciones Auxiliares
 
 sonCandidatosDeUnaMismaProvincia(UnCandidato,OtroCandidato,UnaProvincia):-
@@ -174,3 +182,40 @@ ajusteConsultora(UnPartido,UnaProvincia,NuevoPorcentaje):-
 /* Lo que hariamos, es modificar las reglas de intencionDeVotoEn , de la siguiente
 intencionDeVotoEn(UnaProvincia, UnPartido, ajusteConsultora(UnPartido,UnaProvincia,NuevoPorcentaje))
 */
+
+
+% PUNTO 7
+% auxiliares
+
+edificiosQueVarianLaIntencionDeVoto(hospital).
+edificiosQueVarianLaIntencionDeVoto(jardines).
+edificiosQueVarianLaIntencionDeVoto(universidad).
+edificiosQueVarianLaIntencionDeVoto(escuelas).
+edificiosQueVarianLaIntencionDeVoto(comisaria).
+
+%
+influenciaDePromesas(inflacion(Minimo,Maximo),VariacionIntencionDeVotos):-
+    VariacionIntencionDeVotos is -((Minimo + Maximo) / 2).
+
+influenciaDePromesas(nuevosPuestosDeTrabajo(UnaCantidad),3):-
+    UnaCantidad > 50000.
+
+influenciaDePromesas(construir(UnaListaDeEdilicios),VariacionIntencionDeVotos):-
+    findall(UnaVariacion, (member(Edilicio, UnaListaDeEdilicios),pesoEnElElectorado(Edilicio,UnaVariacion)),ListaDeVariaciones),
+    sum_list(ListaDeVariaciones, VariacionIntencionDeVotos).
+
+pesoEnElElectorado(edilicio(hospital,_),2).
+pesoEnElElectorado(edilicio(jardines,UnaCantidad),UnaVariacion):-
+    UnaVariacion is (UnaCantidad / 10).
+pesoEnElElectorado(edilicio(escuelas,UnaCantidad),UnaVariacion):-
+    UnaVariacion is (UnaCantidad / 10).
+pesoEnElElectorado(edilicio(comisaria,200),2).
+pesoEnElElectorado(edilicio(universidad,_),0).
+pesoEnElElectorado(edilicio(OtroEdificio,_),-1):-
+    not(edificiosQueVarianLaIntencionDeVoto(OtroEdificio)).
+
+% Punto 8
+promedioDeCrecimiento(UnPartido,SumatoriaDeCrecimientoPorPromesa):-
+    promete(UnPartido,_),
+    findall(UnPorcentaje,(promete(UnPartido,UnaPromesa),influenciaDePromesas(UnaPromesa,UnPorcentaje)),ListaDePorcentajes),
+    sum_list(ListaDePorcentajes,SumatoriaDeCrecimientoPorPromesa).
