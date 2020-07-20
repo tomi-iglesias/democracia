@@ -100,26 +100,23 @@ promete(rojo,nuevosPuestosDeTrabajo(80000)).
 promete(rojo,inflacion(10,30)).
 
 % Funciones Auxiliares
-
-sonCandidatosDeUnaMismaProvincia(UnCandidato,OtroCandidato,UnaProvincia):-
-    candidato(UnCandidato,Partido,_),
-    candidato(OtroCandidato,OtroPartido,_),
-    partido(Partido,UnaProvincia),
-    partido(OtroPartido,UnaProvincia).
-
 tieneMayorIntencionDeVotoQue(UnPartido,OtroPartido,UnaProvincia):-
     intencionDeVotoEn(UnaProvincia,UnPartido,UnPorcentaje),
     intencionDeVotoEn(UnaProvincia,OtroPartido,OtroPorcentaje),
     UnPorcentaje > OtroPorcentaje.
 
-esPartidoGanador(UnPartido,UnaProvincia):-
-    partido(UnPartido,UnaProvincia),
-    forall((partido(OtroPartido,UnaProvincia), OtroPartido \= UnPartido),tieneMayorIntencionDeVotoQue(UnPartido,OtroPartido,UnaProvincia)).
-% Por que si pongo OtroPartido \= UnPartido, antes de partido(OtroPartido,UnaProvincia) no me funciona?
+esPartidoGanador(UnCandidato,UnPartido,UnaProvincia):-
+    partido(OtroPartido,UnaProvincia),
+    forall((candidato(OtroCandidato,OtroPartido,_), UnPartido \= OtroPartido),leGanaA(UnCandidato,OtroCandidato,UnaProvincia)).
 
-esElMasJovenDeSuPartido(UnCandidato, UnPartido, UnaEdad):-
-    candidato(UnCandidato,UnPartido,UnaEdad),
-    forall((candidato(OtroCandidato,UnPartido,OtraEdad), OtroCandidato \= UnCandidato),UnaEdad < OtraEdad).
+esMenor(UnCandidato,OtroCandidato):-
+    candidato(UnCandidato,_,UnaEdad),
+    candidato(OtroCandidato,_,OtraEdad),
+    UnaEdad < OtraEdad.
+
+esElMasJovenDeSuPartido(UnCandidato, UnPartido):-
+    candidato(UnCandidato,UnPartido,_),
+    forall((candidato(OtroCandidato,UnPartido,_), OtroCandidato \= UnCandidato),esMenor(UnCandidato,OtroCandidato)).
 
 ganaEnEsaProvincia(UnPartido,UnaProvincia):-
     partido(UnPartido,UnaProvincia),
@@ -129,55 +126,59 @@ ganaEnEsaProvincia(UnPartido,UnaProvincia):-
 % Punto 2
 
 esPicante(UnaProvincia):-
-    esProvinciaGrande(UnaProvincia),
+    masDeUnMillonDeHabitantes(UnaProvincia),
+    sePresentanPorLoMenosDosPartidos(UnaProvincia).
+
+sePresentanPorLoMenosDosPartidos(UnaProvincia):-
     partido(UnPartido,UnaProvincia),
     partido(OtroPartido,UnaProvincia),
     UnPartido \= OtroPartido.
 
-
-esProvinciaGrande(UnaProvincia):-
+masDeUnMillonDeHabitantes(UnaProvincia):-
     provincia(UnaProvincia,Habitantes),
     Habitantes > 1000000.
 
 % Punto 3
 
 leGanaA(UnCandidato,OtroCandidato,UnaProvincia):-
-    sonCandidatosDeUnaMismaProvincia(UnCandidato,OtroCandidato,UnaProvincia),
+    partido(UnPartido,UnaProvincia),
     candidato(UnCandidato,UnPartido,_),
     candidato(OtroCandidato,OtroPartido,_),
-    tieneMayorIntencionDeVotoQue(UnPartido,OtroPartido,UnaProvincia).
+    esGanador(UnPartido,OtroPartido,UnaProvincia).
     
-leGanaA(UnCandidato,OtroCandidato,UnaProvincia):-
-    candidato(UnCandidato,UnPartido,_),
-    partido(UnPartido,UnaProvincia),
-    not(sonCandidatosDeUnaMismaProvincia(UnCandidato,OtroCandidato,UnaProvincia)).
+esGanador(_,OtroPartido,UnaProvincia):-
+    not(partido(OtroPartido,UnaProvincia)).
 
-leGanaA(UnCandidato,OtroCandidato,UnaProvincia):-
-    candidato(UnCandidato,UnPartido,_),
-    candidato(OtroCandidato,UnPartido,_),
-    partido(UnPartido,UnaProvincia).
+esGanador(UnPartido,UnPartido,_).
+
+esGanador(UnPartido,OtroPartido,UnaProvincia):-
+    partido(OtroPartido,UnaProvincia),
+    tieneMayorIntencionDeVotoQue(UnPartido,OtroPartido,UnaProvincia).
 
 % Punto 4
 
 elGranCandidato(UnCandidato):-
-    candidato(UnCandidato,UnPartido,UnaEdad),
-    forall(partido(UnPartido,UnaProvincia), esPartidoGanador(UnPartido,UnaProvincia)),
-    esElMasJovenDeSuPartido(UnCandidato,UnPartido,UnaEdad).
+    candidato(UnCandidato,UnPartido,_),
+    forall(partido(UnPartido,UnaProvincia), esPartidoGanador(UnCandidato,UnPartido,UnaProvincia)),
+    esElMasJovenDeSuPartido(UnCandidato,UnPartido).
 
 % 1) Porque si consultamos elGranCandidato(QuienEs) , nos devuelve QuienEs = Frank unicamente. 
 % 2) Deberíamos realizar una consulta de tipo Existencial, ya podemos conocer quien hace verdadera la consulta.
 % 3) La consulta Existencial esta relacionada con el concepto del cuantificador Existencial. 
 
 % Punto 5
-ajusteConsultora(UnPartido,UnaProvincia,NuevoPorcentaje):-
+
+ajusteDePorcentaje(UnPartido,UnaProvincia,UnPorcentaje,NuevoPorcentaje):-
     not(ganaEnEsaProvincia(UnPartido,UnaProvincia)),
-    intencionDeVotoEn(UnaProvincia,UnPartido,UnPorcentaje),
     NuevoPorcentaje is UnPorcentaje + 5.
 
-ajusteConsultora(UnPartido,UnaProvincia,NuevoPorcentaje):-
+ajusteDePorcentaje(UnPartido,UnaProvincia,UnPorcentaje,NuevoPorcentaje):-
     ganaEnEsaProvincia(UnPartido,UnaProvincia),
+    NuevoPorcentaje is UnPorcentaje - 20.
+
+ajusteConsultora(UnPartido,UnaProvincia,NuevoPorcentaje):-
     intencionDeVotoEn(UnaProvincia,UnPartido,UnPorcentaje),
-    NuevoPorcentaje is UnPorcentaje - 20. 
+    ajusteDePorcentaje(UnPartido,UnaProvincia,UnPorcentaje,NuevoPorcentaje).
     
 /* Lo que hariamos, es modificar las reglas de intencionDeVotoEn , de la siguiente
 intencionDeVotoEn(UnaProvincia, UnPartido, ajusteConsultora(UnPartido,UnaProvincia,NuevoPorcentaje))
@@ -194,6 +195,7 @@ edificiosQueVarianLaIntencionDeVoto(escuelas).
 edificiosQueVarianLaIntencionDeVoto(comisaria).
 
 %
+
 influenciaDePromesas(inflacion(Minimo,Maximo),VariacionIntencionDeVotos):-
     VariacionIntencionDeVotos is -((Minimo + Maximo) / 2).
 
